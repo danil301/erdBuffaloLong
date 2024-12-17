@@ -71,7 +71,7 @@ namespace aiProj.Controllers
         {
             var userName = User.Identity.Name;
             var result = await _projectService.GetAllUserProjects(userName);
-           
+
             return Ok(result);
         }
 
@@ -86,10 +86,10 @@ namespace aiProj.Controllers
         }
 
         [Authorize]
-        [HttpDelete("{name}")]        
+        [HttpDelete("{name}")]
         public async Task<IActionResult> DeleteProject(string name)
         {
-            if(!await _projectService.DeleteProjectByName(name))
+            if (!await _projectService.DeleteProjectByName(name))
             {
                 return BadRequest();
             }
@@ -108,6 +108,7 @@ namespace aiProj.Controllers
         //    {
         //        await project.File.CopyToAsync(fileStream);
         //    }
+
 
         //    var proj = new Project()
         //    {
@@ -128,16 +129,20 @@ namespace aiProj.Controllers
         [HttpPatch]
         public async Task<IActionResult> TrainModel(string projectName)
         {
-            var asf = User.Identity.Name;
             var project = _projectService.GetAllUserProjects(User.Identity.Name).Result.First(x => x.Name == projectName);
 
             string pythonPath = "python"; // Укажите путь к Python, если требуется.
             string scriptPath = "train_model.py"; // Укажите путь к вашему Python-скрипту.
 
+            string modelType = project.Type;
+            string targetColumn = project.TargetColumn;
+            string filePath = project.FilePath;
+            string paramsJson = project.Params;
+
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = pythonPath,
-                Arguments = $"{scriptPath} \"{project.Type}\" \"{project.TargetColumn}\" \"{project.FilePath}\" \"{project.Params}\"",
+                Arguments = $"{scriptPath} \"{modelType}\" \"{targetColumn}\" \"{filePath}\" \"{paramsJson.Replace("\"", "\\\"")}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -154,12 +159,11 @@ namespace aiProj.Controllers
 
                 if (!string.IsNullOrEmpty(errors))
                 {
-                    throw new Exception($"Error in Python script: {errors}");
+                    return BadRequest(errors);
                 }
 
-
+                return Ok(result);
             }
-            return Ok();
         }
     }
 }
